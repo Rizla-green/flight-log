@@ -1,0 +1,13 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Only YOU (signed in with the one account you create) can read or write
+    // anything. Everyone else — including anyone who isn't logged in — is
+    // refused. This is what makes the log private even though the site
+    // itself is publicly reachable on GitHub Pages.
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

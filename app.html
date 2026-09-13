@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Flight Log</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <div class="sidebar">
+      <div class="sidebar-header">Flight Log</div>
+      <div class="nav">
+        <div class="nav-item active" data-view="new">New Flight</div>
+        <div class="nav-item" data-view="log">Flight Log</div>
+        <div class="nav-item" data-view="batteries">Batteries &amp; Drones</div>
+      </div>
+      <div class="sidebar-footer">
+        <span id="whoami">Signed in</span>
+        <a id="logoutLink">Log out</a>
+      </div>
+    </div>
+
+    <div class="main">
+
+      <!-- ============ NEW FLIGHT VIEW ============ -->
+      <div id="view-new">
+        <div class="page-title">Log a Flight</div>
+        <div class="page-sub" style="margin-bottom:20px;">Fields marked <span class="auto-badge">&#9889; auto</span> fill in where possible — everything stays editable</div>
+
+        <div class="grid-3">
+          <div class="field">
+            <label>Drone</label>
+            <select id="f_drone"></select>
+          </div>
+          <div class="field">
+            <label>Serial No. <span class="auto-badge">&#9889; auto</span></label>
+            <input id="f_serial" disabled>
+          </div>
+          <div class="field">
+            <label>Battery</label>
+            <select id="f_battery"></select>
+          </div>
+
+          <div class="field">
+            <label>Date <span class="auto-badge">&#9889; auto</span></label>
+            <input id="f_date" type="date">
+          </div>
+          <div class="field">
+            <label>Start Time</label>
+            <input id="f_start" type="time">
+          </div>
+          <div class="field">
+            <label>End Time</label>
+            <input id="f_end" type="time">
+          </div>
+
+          <div class="field span-2">
+            <label>Location (what3words)</label>
+            <input id="f_w3w" placeholder="///example.words.here">
+          </div>
+          <div class="field">
+            <label>Duration <span class="auto-badge">&#9889; auto</span></label>
+            <input id="f_duration" disabled>
+          </div>
+
+          <div class="field span-3">
+            <label>Weather / Conditions <span class="auto-badge">&#9889; auto</span></label>
+            <div style="display:flex;gap:8px;">
+              <input id="f_weather" style="flex:1;" placeholder="Fetched from location + date, or type your own">
+              <button class="btn secondary small" id="refreshWeather" type="button">Refresh</button>
+            </div>
+          </div>
+
+          <div class="field span-3">
+            <label>Purpose / Notes</label>
+            <textarea id="f_notes" placeholder="What was the flight for? Any incidents? (write &quot;none&quot; if uneventful)"></textarea>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:16px;margin-top:4px;">
+          <button class="btn" id="saveFlight">Save Flight</button>
+          <span class="page-sub" id="cumulativeHours" style="margin-top:0;"></span>
+        </div>
+        <div class="error-msg" id="f_error"></div>
+      </div>
+
+      <!-- ============ FLIGHT LOG VIEW ============ -->
+      <div id="view-log" class="hidden">
+        <div class="toolbar">
+          <div>
+            <div class="page-title">Flight Log</div>
+            <div class="page-sub" id="log_summary"></div>
+          </div>
+          <div class="toolbar-actions">
+            <button class="btn secondary small" id="exportCsv">Export CSV</button>
+            <button class="btn small" id="gotoNew">+ New Flight</button>
+          </div>
+        </div>
+
+        <div class="table-wrap" style="margin-top:16px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th><th>Drone</th><th>Battery</th><th>Dur.</th>
+                <th>Location</th><th>Weather</th><th>Notes</th>
+              </tr>
+            </thead>
+            <tbody id="log_rows"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ============ BATTERIES & DRONES VIEW ============ -->
+      <div id="view-batteries" class="hidden">
+        <div class="toolbar">
+          <div class="page-title">Drones &amp; Batteries</div>
+          <button class="btn small" id="addDrone">+ Add Drone</button>
+        </div>
+        <div id="drone_cards" style="display:flex;flex-direction:column;gap:20px;margin-top:16px;"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
