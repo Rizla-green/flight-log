@@ -1,9 +1,37 @@
 # Flight Log — setup guide
 
-A private drone flight log for A2 CofC record-keeping: login, a flight entry
-form with auto-fill, a flight log table with CSV export, and drone/battery
-tracking. Runs entirely on free tiers: GitHub Pages (hosting) + Firebase
-Spark plan (login + database).
+A private drone flight log for A2 CofC record-keeping: login, a dashboard,
+a pre-flight checklist built into the flight form, a flight entry form with
+auto-fill, a flight log with date-range filtering and CSV export, and
+drone/battery/controller hour and cycle tracking. Runs entirely on free
+tiers: GitHub Pages (hosting) + Firebase Spark plan (login + database).
+
+## What's new in this version
+
+- **Dashboard** — lands here after login. Shows each drone's airframe hours
+  and cycles, its controller's hours and cycles, each battery's hours and
+  cycles, overall totals, and your 5 most recent flights.
+- **Pre-flight check, built into the New Flight page** — sits at the top of
+  the form and must be completed (or explicitly skipped) before the rest of
+  the flight fields unlock. Covers all 4 propellers and all 4 arms
+  individually (Front Left/Right, Back Left/Right), the gimbal/thermal lens,
+  night beacon (only shown if you tick "flying at night"), landing zone, and
+  a full hazard sweep grouped into Airborne & Airspace, Ground & Physical
+  Obstacles, Signal & Environmental Interference, and People & Mobile
+  Hazards — plus a free-text "other hazard" box. A "Copy Last Check" button
+  reuses your previous check as a starting point. If you type a what3words
+  address you've flown from before, the hazard sweep and landing zone notes
+  from your last check at that exact location prefill automatically (still
+  editable — it's a starting point, not a shortcut past actually looking).
+- **Hours and cycles now track properly.** When you add a drone or battery,
+  you're asked for its starting hours/cycles (so equipment you already used
+  before starting this log isn't counted as brand new). Every logged flight
+  then adds its duration and +1 cycle to the drone, its controller, and
+  whichever battery you picked.
+- **Flight Log now has date-range filtering** — a From/To picker plus quick
+  buttons (Last 30 days, Last 90 days, This year, All time). The table, the
+  hours total shown, and the CSV export all respect whatever range is
+  selected, and the exported filename includes the date range.
 
 ## 1. Create the Firebase project
 

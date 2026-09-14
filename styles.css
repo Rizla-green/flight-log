@@ -190,3 +190,26 @@ tbody tr:last-child td { border-bottom: none; }
   color: #5c6a85; font-size: 12px; cursor: pointer;
 }
 .tile-add:hover { color: var(--text-dim); border-color: var(--text-faint); }
+
+/* ---------- Pre-flight check ---------- */
+.checklist-group { border-top: 1px solid var(--border-soft); padding-top: 14px; margin-top: 4px; display: flex; flex-direction: column; gap: 10px; }
+.checklist-group:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
+.checklist-group-title { font-size: 13px; font-weight: 600; color: var(--text-dim); }
+
+.quad-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+.quad-tile { background: var(--surface-alt); border: 1px solid var(--border-soft); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+.quad-tile label { font-size: 12.5px; display: flex; align-items: center; gap: 6px; }
+.quad-tile input[type="text"] { background: var(--bg); border: 1px solid #26314a; border-radius: 6px; height: 30px; padding: 0 8px; color: var(--text); font-size: 12px; }
+
+.check-row { display: flex; flex-direction: column; gap: 6px; }
+.check-inline { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-dim); }
+.check-row input[type="text"] { background: var(--surface-alt); border: 1px solid #26314a; border-radius: 6px; height: 32px; padding: 0 10px; color: var(--text); font-size: 12.5px; }
+
+.hazard-category { margin-bottom: 10px; }
+.hazard-category-title { font-size: 11.5px; font-weight: 600; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; }
+.hazard-item { display: flex; align-items: flex-start; gap: 8px; font-size: 12.5px; color: var(--text-dim); padding: 4px 0; }
+.hazard-item input { margin-top: 3px; }
+
+@media (max-width: 500px) {
+  .quad-grid { grid-template-columns: 1fr; }
+}

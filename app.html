@@ -11,7 +11,8 @@
     <div class="sidebar">
       <div class="sidebar-header">Flight Log</div>
       <div class="nav">
-        <div class="nav-item active" data-view="new">New Flight</div>
+        <div class="nav-item active" data-view="dashboard">Dashboard</div>
+        <div class="nav-item" data-view="new">New Flight</div>
         <div class="nav-item" data-view="log">Flight Log</div>
         <div class="nav-item" data-view="batteries">Batteries &amp; Drones</div>
       </div>
@@ -23,65 +24,139 @@
 
     <div class="main">
 
+      <!-- ============ DASHBOARD ============ -->
+      <div id="view-dashboard">
+        <div class="toolbar">
+          <div class="page-title">Dashboard</div>
+          <button class="btn small" id="dash_gotoNew">Log a Flight</button>
+        </div>
+        <div id="dash_totals" class="page-sub" style="margin-top:4px;"></div>
+        <div id="dash_drones" style="display:flex;flex-direction:column;gap:16px;margin-top:20px;"></div>
+
+        <div style="margin-top:8px;">
+          <div class="page-title" style="font-size:16px;">Recent Flights</div>
+          <div class="table-wrap" style="margin-top:12px;">
+            <table>
+              <thead><tr><th>Date</th><th>Drone</th><th>Duration</th><th>Location</th></tr></thead>
+              <tbody id="dash_recent"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
       <!-- ============ NEW FLIGHT VIEW ============ -->
-      <div id="view-new">
+      <div id="view-new" class="hidden">
         <div class="page-title">Log a Flight</div>
-        <div class="page-sub" style="margin-bottom:20px;">Fields marked <span class="auto-badge">&#9889; auto</span> fill in where possible — everything stays editable</div>
+        <div class="page-sub" style="margin-bottom:16px;">Complete the pre-flight check first — the rest of the form unlocks once it's done.</div>
 
-        <div class="grid-3">
-          <div class="field">
-            <label>Drone</label>
-            <select id="f_drone"></select>
-          </div>
-          <div class="field">
-            <label>Serial No. <span class="auto-badge">&#9889; auto</span></label>
-            <input id="f_serial" disabled>
-          </div>
-          <div class="field">
-            <label>Battery</label>
-            <select id="f_battery"></select>
+        <!-- ---- Pre-flight check (must be completed first) ---- -->
+        <div class="card" id="preflight_card">
+          <div class="card-header">
+            <div class="card-title">Pre-Flight Check</div>
+            <div class="card-meta" id="preflight_status">Not completed</div>
           </div>
 
-          <div class="field">
-            <label>Date <span class="auto-badge">&#9889; auto</span></label>
-            <input id="f_date" type="date">
-          </div>
-          <div class="field">
-            <label>Start Time</label>
-            <input id="f_start" type="time">
-          </div>
-          <div class="field">
-            <label>End Time</label>
-            <input id="f_end" type="time">
+          <div class="checklist-group">
+            <div class="checklist-group-title">Propellers</div>
+            <div class="quad-grid" id="pf_props"></div>
           </div>
 
-          <div class="field span-2">
-            <label>Location (what3words)</label>
-            <input id="f_w3w" placeholder="///example.words.here">
-          </div>
-          <div class="field">
-            <label>Duration <span class="auto-badge">&#9889; auto</span></label>
-            <input id="f_duration" disabled>
+          <div class="checklist-group">
+            <div class="checklist-group-title">Airframe &amp; Arms</div>
+            <div class="quad-grid" id="pf_arms"></div>
           </div>
 
-          <div class="field span-3">
-            <label>Weather / Conditions <span class="auto-badge">&#9889; auto</span></label>
-            <div style="display:flex;gap:8px;">
-              <input id="f_weather" style="flex:1;" placeholder="Fetched from location + date, or type your own">
-              <button class="btn secondary small" id="refreshWeather" type="button">Refresh</button>
+          <div class="checklist-group">
+            <div class="check-row">
+              <label class="check-inline"><input type="checkbox" id="pf_gimbal"> Gimbal &amp; Thermal Lens clean, free of smudges/dirt/moisture</label>
+              <input type="text" id="pf_gimbal_note" placeholder="Notes (optional)">
+            </div>
+            <div class="check-row">
+              <label class="check-inline"><input type="checkbox" id="pf_night_flag"> Flying at night?</label>
+            </div>
+            <div class="check-row hidden" id="pf_night_row">
+              <label class="check-inline"><input type="checkbox" id="pf_night"> Night beacon securely mounted and operational</label>
+              <input type="text" id="pf_night_note" placeholder="Notes (optional)">
+            </div>
+            <div class="check-row">
+              <label class="check-inline"><input type="checkbox" id="pf_landing"> Landing zone clean, level, clear of tall grass/loose dirt/standing water</label>
+              <input type="text" id="pf_landing_note" placeholder="Notes (optional)">
             </div>
           </div>
 
-          <div class="field span-3">
-            <label>Purpose / Notes</label>
-            <textarea id="f_notes" placeholder="What was the flight for? Any incidents? (write &quot;none&quot; if uneventful)"></textarea>
+          <div class="checklist-group">
+            <div class="checklist-group-title">Hazard Sweep <span class="auto-badge" id="pf_hazard_prefill_note"></span></div>
+            <label class="check-inline" style="margin-bottom:8px;"><input type="checkbox" id="pf_site_clear"> None apply — site clear</label>
+            <div id="pf_hazard_categories"></div>
+            <div class="field" style="margin-top:10px;">
+              <label>Other hazard (optional)</label>
+              <input type="text" id="pf_hazard_other" placeholder="Anything not listed above">
+            </div>
+          </div>
+
+          <div style="display:flex;gap:10px;align-items:center;">
+            <button class="btn small" id="pf_copyLast" type="button">Copy Last Check</button>
+            <button class="btn" id="pf_complete" type="button">Mark Check Complete</button>
+            <button class="btn secondary small" id="pf_skip" type="button">Skip (not recommended)</button>
           </div>
         </div>
 
-        <div style="display:flex;align-items:center;gap:16px;margin-top:4px;">
-          <button class="btn" id="saveFlight">Save Flight</button>
-          <span class="page-sub" id="cumulativeHours" style="margin-top:0;"></span>
-        </div>
+        <!-- ---- Flight details (disabled until check complete) ---- -->
+        <fieldset id="flight_fields" disabled style="border:none;padding:0;margin-top:22px;">
+          <div class="grid-3">
+            <div class="field">
+              <label>Drone</label>
+              <select id="f_drone"></select>
+            </div>
+            <div class="field">
+              <label>Serial No. <span class="auto-badge">&#9889; auto</span></label>
+              <input id="f_serial" disabled>
+            </div>
+            <div class="field">
+              <label>Battery</label>
+              <select id="f_battery"></select>
+            </div>
+
+            <div class="field">
+              <label>Date <span class="auto-badge">&#9889; auto</span></label>
+              <input id="f_date" type="date">
+            </div>
+            <div class="field">
+              <label>Start Time</label>
+              <input id="f_start" type="time">
+            </div>
+            <div class="field">
+              <label>End Time</label>
+              <input id="f_end" type="time">
+            </div>
+
+            <div class="field span-2">
+              <label>Location (what3words)</label>
+              <input id="f_w3w" placeholder="///example.words.here">
+            </div>
+            <div class="field">
+              <label>Duration <span class="auto-badge">&#9889; auto</span></label>
+              <input id="f_duration" disabled>
+            </div>
+
+            <div class="field span-3">
+              <label>Weather / Conditions <span class="auto-badge">&#9889; auto</span></label>
+              <div style="display:flex;gap:8px;">
+                <input id="f_weather" style="flex:1;" placeholder="Fetched from location + date, or type your own">
+                <button class="btn secondary small" id="refreshWeather" type="button">Refresh</button>
+              </div>
+            </div>
+
+            <div class="field span-3">
+              <label>Purpose / Notes</label>
+              <textarea id="f_notes" placeholder="What was the flight for? Any incidents? (write &quot;none&quot; if uneventful)"></textarea>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:16px;margin-top:4px;">
+            <button class="btn" id="saveFlight" type="button">Save Flight</button>
+          </div>
+        </fieldset>
         <div class="error-msg" id="f_error"></div>
       </div>
 
@@ -98,12 +173,26 @@
           </div>
         </div>
 
+        <div class="toolbar" style="margin-top:14px;flex-wrap:wrap;gap:10px;">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <input type="date" id="range_from" title="From">
+            <span class="page-sub" style="margin:0;">to</span>
+            <input type="date" id="range_to" title="To">
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="btn secondary small" data-range="30">Last 30 days</button>
+            <button class="btn secondary small" data-range="90">Last 90 days</button>
+            <button class="btn secondary small" data-range="year">This year</button>
+            <button class="btn secondary small" data-range="all">All time</button>
+          </div>
+        </div>
+
         <div class="table-wrap" style="margin-top:16px;">
           <table>
             <thead>
               <tr>
                 <th>Date</th><th>Drone</th><th>Battery</th><th>Dur.</th>
-                <th>Location</th><th>Weather</th><th>Notes</th>
+                <th>Location</th><th>Weather</th><th>Check</th><th>Notes</th>
               </tr>
             </thead>
             <tbody id="log_rows"></tbody>
