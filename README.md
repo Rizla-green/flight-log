@@ -100,6 +100,36 @@ account to log in with.
 - **Flight Log** shows everything you've logged, with a running total and a
   CSV export button.
 
+## Working offline
+
+The app now works with no signal. Logging a flight, adding a battery, or
+anything else you do offline is saved locally on your device straight away
+and syncs to your Firestore database automatically the next time you have
+a connection — you don't need to do anything to trigger the sync, and
+nothing is lost by flying somewhere with no signal. A small indicator in
+the bottom-left of the sidebar shows "Online" or "Offline — saving
+locally," so you always know which mode you're in. One caveat: the very
+first time you ever open the site, it needs one moment of connectivity to
+load and cache itself — after that first successful load, it keeps working
+offline from then on, including if you never have signal on-site again.
+
+## Installing it as an app on your phone
+
+The site is now a Progressive Web App (PWA) — free, no app store needed —
+so you can add it to your home screen and it opens full-screen like a real
+app.
+
+**iPhone (Safari):** open your site's URL in Safari, tap the Share icon
+(square with an arrow), scroll down and tap "Add to Home Screen," then
+"Add." An icon appears on your home screen.
+
+**Android (Chrome):** open your site's URL in Chrome, tap the three-dot
+menu, tap "Add to Home screen" (or you may see a banner offering this
+automatically), then confirm. An icon appears on your home screen.
+
+A placeholder icon is included (`icon-192.png`, `icon-512.png`) — send me
+your own image whenever you'd like and I'll swap it in.
+
 ## Files in this folder
 
 - `index.html` — login page
@@ -109,3 +139,6 @@ account to log in with.
 - `firebase-config.js` — **you edit this** with your project's config and
   (optionally) your what3words key
 - `firestore.rules` — paste into the Firebase console's Firestore rules tab
+- `manifest.json`, `sw.js`, `icon-192.png`, `icon-512.png` — make the site
+  installable as an app (PWA) on your phone; no setup needed, just upload
+  them alongside everything else

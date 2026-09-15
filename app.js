@@ -2,13 +2,26 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/fireba
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import {
   getFirestore, collection, addDoc, getDocs, doc, updateDoc,
-  query, orderBy, serverTimestamp, where, limit
+  query, orderBy, serverTimestamp, where, limit,
+  initializeFirestore, persistentLocalCache, persistentMultipleTabManager
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 import { firebaseConfig, w3wApiKey } from "./firebase-config.js";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = getFirestore(app);
+
+// Offline support: reads and writes work with no signal, queued locally
+// (IndexedDB) and synced automatically once you're back online. Falls back
+// to a normal online-only connection if the browser doesn't support it
+// (e.g. private/incognito mode on some browsers).
+let db;
+try {
+  db = initializeFirestore(app, {
+    localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+  });
+} catch (e) {
+  db = getFirestore(app);
+}
 
 let currentUser = null;
 let drones = [];   // {id, model, serial, controllerSerial, cumulativeMins, cycles, controllerCumulativeMins, controllerCycles, batteries:[...]}
@@ -69,6 +82,21 @@ onAuthStateChanged(auth, (user) => {
 });
 
 document.getElementById("logoutLink").addEventListener("click", () => signOut(auth));
+
+// ---------- Online/offline status ----------
+function updateConnStatus() {
+  const el = document.getElementById("connStatus");
+  if (navigator.onLine) {
+    el.textContent = "Online";
+    el.classList.remove("offline");
+  } else {
+    el.textContent = "Offline — saving locally";
+    el.classList.add("offline");
+  }
+}
+window.addEventListener("online", updateConnStatus);
+window.addEventListener("offline", updateConnStatus);
+updateConnStatus();
 
 // ---------- Nav ----------
 document.querySelectorAll(".nav-item").forEach((item) => {

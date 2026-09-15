@@ -129,6 +129,10 @@ a { color: var(--accent); }
 
 .sidebar-footer { margin-top: auto; padding: 0 20px; color: #5c6a85; font-size: 11px; display: flex; flex-direction: column; gap: 8px; }
 .sidebar-footer a { cursor: pointer; }
+.conn-status { display: flex; align-items: center; gap: 6px; }
+.conn-status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #7dd88f; }
+.conn-status.offline::before { background: #e0a94a; }
+.conn-status.offline { color: #e0a94a; }
 
 .main {
   flex: 1;
