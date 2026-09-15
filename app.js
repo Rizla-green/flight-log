@@ -205,18 +205,24 @@ function renderBatteryCards() {
           <div class="card-meta"></div>
           <div class="card-meta">Airframe: ${fmtHours(drone.cumulativeMins)} · ${drone.cycles || 0} cycles &middot; Controller: ${fmtHours(drone.controllerCumulativeMins)} · ${drone.controllerCycles || 0} charge cycles</div>
         </div>
-        <div class="card-meta">${activeCount} ${activeCount === 1 ? "battery" : "batteries"} assigned</div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+          <div class="card-meta">${activeCount} ${activeCount === 1 ? "battery" : "batteries"} assigned</div>
+          <button class="btn secondary small" data-edit-drone type="button">Edit Drone</button>
+        </div>
       </div>
       <div class="battery-grid"></div>
     `;
     card.querySelector(".card-title").textContent = drone.model;
-    card.querySelector(".card-meta").textContent =
+    card.querySelectorAll(".card-meta")[0].textContent =
       `Aircraft serial: ${drone.serial || "—"}${drone.controllerSerial ? " · Controller: " + drone.controllerSerial : ""}`;
+    card.querySelector("[data-edit-drone]").addEventListener("click", () => editDrone(drone));
 
     const grid = card.querySelector(".battery-grid");
     drone.batteries.forEach((b) => {
       const tile = document.createElement("div");
       tile.className = "battery-tile";
+      tile.style.cursor = "pointer";
+      tile.title = "Click to edit this battery";
       tile.innerHTML = `
         <div class="battery-tile-head">
           <div class="battery-name"></div>
@@ -229,6 +235,7 @@ function renderBatteryCards() {
       `;
       tile.querySelector(".battery-name").textContent = b.name;
       tile.querySelector(".page-sub").textContent = b.serial ? "Serial: " + b.serial : "";
+      tile.addEventListener("click", () => editBattery(drone.id, b));
       grid.appendChild(tile);
     });
 
@@ -279,6 +286,52 @@ async function addBattery(droneId) {
     name, serial,
     cumulativeMins: Math.round(startHrs * 60), cycles: startCycles,
     lastUsed: null, retired: false
+  });
+  await loadDrones();
+}
+
+async function editBattery(droneId, battery) {
+  const name = prompt("Battery label:", battery.name);
+  if (name === null) return; // cancelled
+  const serial = prompt("Battery serial number:", battery.serial || "") || "";
+  const currentHrs = (battery.cumulativeMins || 0) / 60;
+  const newHrsInput = prompt("Total hours flown on this battery (edit if it's wrong):", currentHrs.toFixed(2));
+  if (newHrsInput === null) return;
+  const newCyclesInput = prompt("Total charge cycles on this battery (edit if it's wrong):", String(battery.cycles || 0));
+  if (newCyclesInput === null) return;
+  const retired = confirm("Mark this battery as retired? OK = retired, Cancel = still active.");
+
+  await updateDoc(doc(db, "drones", droneId, "batteries", battery.id), {
+    name, serial,
+    cumulativeMins: Math.round((parseFloat(newHrsInput) || 0) * 60),
+    cycles: parseInt(newCyclesInput) || 0,
+    retired
+  });
+  await loadDrones();
+}
+
+async function editDrone(drone) {
+  const model = prompt("Drone make and model:", drone.model);
+  if (model === null) return;
+  const serial = prompt("Aircraft serial number:", drone.serial || "") || "";
+  const controllerSerial = prompt("Controller serial number:", drone.controllerSerial || "") || "";
+  const currentHrs = (drone.cumulativeMins || 0) / 60;
+  const newHrs = prompt("Total airframe hours (edit if it's wrong):", currentHrs.toFixed(2));
+  if (newHrs === null) return;
+  const newCycles = prompt("Total airframe cycles:", String(drone.cycles || 0));
+  if (newCycles === null) return;
+  const ctrlHrs = ((drone.controllerCumulativeMins || 0) / 60);
+  const newCtrlHrs = prompt("Total controller hours:", ctrlHrs.toFixed(2));
+  if (newCtrlHrs === null) return;
+  const newCtrlCycles = prompt("Total controller charge cycles:", String(drone.controllerCycles || 0));
+  if (newCtrlCycles === null) return;
+
+  await updateDoc(doc(db, "drones", drone.id), {
+    model, serial, controllerSerial,
+    cumulativeMins: Math.round((parseFloat(newHrs) || 0) * 60),
+    cycles: parseInt(newCycles) || 0,
+    controllerCumulativeMins: Math.round((parseFloat(newCtrlHrs) || 0) * 60),
+    controllerCycles: parseInt(newCtrlCycles) || 0
   });
   await loadDrones();
 }
