@@ -569,6 +569,63 @@ async function w3wToCoords(words) {
   return null;
 }
 
+async function coordsToW3w(lat, lng) {
+  if (!w3wApiKey || w3wApiKey.startsWith("YOUR_")) return null;
+  try {
+    const res = await fetch(
+      `https://api.what3words.com/v3/convert-to-3wa?coordinates=${lat},${lng}&key=${w3wApiKey}`
+    );
+    const data = await res.json();
+    if (data.words) return data.words;
+  } catch (e) { /* ignore */ }
+  return null;
+}
+
+document.getElementById("useMyLocation").addEventListener("click", () => {
+  const errorEl = document.getElementById("f_error");
+  errorEl.textContent = "";
+
+  if (!("geolocation" in navigator)) {
+    errorEl.textContent = "Your browser doesn't support location access.";
+    return;
+  }
+  if (!w3wApiKey || w3wApiKey.startsWith("YOUR_")) {
+    errorEl.textContent = "Add a what3words API key in firebase-config.js to use this button.";
+    return;
+  }
+
+  const btn = document.getElementById("useMyLocation");
+  const originalLabel = btn.textContent;
+  btn.textContent = "Locating…";
+  btn.disabled = true;
+
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      const { latitude, longitude } = pos.coords;
+      const words = await coordsToW3w(latitude, longitude);
+      btn.textContent = originalLabel;
+      btn.disabled = false;
+      if (!words) {
+        errorEl.textContent = "Couldn't convert your location to a what3words address — check your API key or connection.";
+        return;
+      }
+      document.getElementById("f_w3w").value = "///" + words;
+      // Reuse the same logic as typing/pasting a location: pulls in any
+      // previous hazard notes for this exact spot, and fetches weather.
+      checkPreviousLocation();
+      refreshWeather();
+    },
+    (err) => {
+      btn.textContent = originalLabel;
+      btn.disabled = false;
+      errorEl.textContent = err.code === err.PERMISSION_DENIED
+        ? "Location access was denied — enable it for this site in your browser/phone settings to use this button."
+        : "Couldn't get your location — try again.";
+    },
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
+});
+
 async function fetchWeather(lat, lng, dateStr, timeStr) {
   try {
     const res = await fetch(

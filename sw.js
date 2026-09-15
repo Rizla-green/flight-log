@@ -2,7 +2,7 @@
 // and reloads instantly on repeat opens. It does NOT cache Firebase/API
 // calls, so your data is always fetched live — only the app's own files
 // are cached.
-const CACHE_NAME = "flight-log-v4";
+const CACHE_NAME = "flight-log-v6";
 const APP_SHELL = [
   "./",
   "./index.html",

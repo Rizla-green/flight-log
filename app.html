@@ -141,7 +141,10 @@
 
             <div class="field span-2">
               <label>Location (what3words)</label>
-              <input id="f_w3w" placeholder="///example.words.here">
+              <div style="display:flex;gap:8px;">
+                <input id="f_w3w" style="flex:1;" placeholder="///example.words.here">
+                <button class="btn secondary small" id="useMyLocation" type="button">📍 Use My Location</button>
+              </div>
             </div>
             <div class="field">
               <label>Duration <span class="auto-badge">&#9889; auto</span></label>
