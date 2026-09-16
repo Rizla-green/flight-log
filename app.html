@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Flight Log</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.css">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icon-192.png">
   <link rel="apple-touch-icon" href="icon-192.png">
@@ -26,9 +28,11 @@
       </div>
       <div class="sidebar-footer">
         <span id="whoami">Signed in</span>
-        <a id="logoutLink">Log out</a>
-        <span id="connStatus" class="conn-status">Online</span>
-        <span id="appVersion" class="app-version">v7</span>
+        <div class="footer-stack">
+          <a id="logoutLink">Log out</a>
+          <span id="connStatus" class="conn-status">Online</span>
+        </div>
+        <span id="appVersion" class="app-version">v10</span>
       </div>
     </div>
 
@@ -60,6 +64,45 @@
         <div class="page-sub" style="margin-bottom:16px;">Complete the pre-flight check first — the rest of the form unlocks once it's done.</div>
 
         <!-- ---- Pre-flight check (must be completed first) ---- -->
+        <div class="card" id="area_card">
+          <div class="card-header">
+            <div class="card-title">Flying Area</div>
+            <div class="card-meta" id="area_status">No area selected</div>
+          </div>
+          <div class="field">
+            <label>Saved area</label>
+            <select id="area_select"><option value="">-- Select a saved area --</option></select>
+          </div>
+          <div id="map"></div>
+          <div id="area_hazard_list" style="display:flex;flex-direction:column;gap:6px;"></div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="btn secondary small" id="area_new" type="button">+ Draw New Area</button>
+            <button class="btn secondary small hidden" id="area_edit_boundary" type="button">Edit Boundary</button>
+            <button class="btn small hidden" id="area_save_boundary" type="button">Save Boundary</button>
+          </div>
+
+          <!-- Hazard-pin picker, shown after tapping inside the drawn area -->
+          <div class="card" id="hazard_picker" style="display:none;background:var(--surface-alt);">
+            <div class="card-title" style="font-size:13px;">Add Hazard Pin</div>
+            <div class="field">
+              <label>Hazard</label>
+              <select id="hz_select"></select>
+            </div>
+            <div class="field" id="hz_other_field" style="display:none;">
+              <label>Short description</label>
+              <input type="text" id="hz_other_text" placeholder="e.g. Loose dog, Fence line">
+            </div>
+            <div class="field">
+              <label>Note (optional)</label>
+              <input type="text" id="hz_note" placeholder="Optional detail">
+            </div>
+            <div style="display:flex;gap:10px;">
+              <button class="btn small" id="hz_add" type="button">Add Pin</button>
+              <button class="btn secondary small" id="hz_cancel" type="button">Cancel</button>
+            </div>
+          </div>
+        </div>
+
         <div class="card" id="preflight_card">
           <div class="card-header">
             <div class="card-title">Pre-Flight Check</div>
@@ -225,11 +268,9 @@
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
   <script type="module" src="app.js"></script>
-  <script>
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js").catch(() => {});
-    }
-  </script>
+  <script src="sw-register.js"></script>
 </body>
 </html>

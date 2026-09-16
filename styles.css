@@ -128,6 +128,7 @@ a { color: var(--accent); }
 .nav-item:hover:not(.active) { background: #101a2c; }
 
 .sidebar-footer { margin-top: auto; padding: 0 20px; color: #5c6a85; font-size: 11px; display: flex; flex-direction: column; gap: 8px; }
+.footer-stack { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
 .sidebar-footer a {
   cursor: pointer;
   color: var(--text-dim);
@@ -171,6 +172,7 @@ a { color: var(--accent); }
   }
   .sidebar-footer #whoami { display: none; } /* saves space on small screens */
   .sidebar-footer #appVersion { display: none; } /* saves space on small screens */
+  .footer-stack { align-items: flex-end; gap: 4px; }
   .main { padding: 20px; max-width: 100%; }
   .grid-3 { grid-template-columns: 1fr; }
   .span-2, .span-3 { grid-column: span 1; }
@@ -232,3 +234,14 @@ tbody tr:last-child td { border-bottom: none; }
 @media (max-width: 500px) {
   .quad-grid { grid-template-columns: 1fr; }
 }
+
+/* ---------- Flying area map ---------- */
+#map { height: 300px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-soft); }
+.hazard-pin-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  background: var(--surface-alt); border: 1px solid var(--border-soft); border-radius: 7px;
+  padding: 8px 12px; font-size: 12.5px; color: var(--text-dim);
+}
+.hazard-pin-row .remove-pin { cursor: pointer; color: var(--text-faint); font-size: 13px; }
+.hazard-pin-row .remove-pin:hover { color: var(--danger); }
+.leaflet-popup-content-wrapper, .leaflet-popup-tip { background: var(--surface); color: var(--text); }

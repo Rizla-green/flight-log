@@ -5,6 +5,8 @@ import {
   query, orderBy, serverTimestamp, where, limit,
   initializeFirestore, persistentLocalCache, persistentMultipleTabManager
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+/* global L */
 import { firebaseConfig, w3wApiKey } from "./firebase-config.js";
 
 const app = initializeApp(firebaseConfig);
@@ -29,6 +31,15 @@ let flights = [];  // cached, newest first
 let logFiltered = [];
 let lastCheck = null; // the most recently completed pre-flight check, for "Copy Last Check"
 let checkComplete = false;
+
+// ---------- Flying area map state ----------
+let areas = [];          // {id, name, polygon:[[lat,lng],...], hazards:[{lat,lng,label,note}]}
+let currentArea = null;  // the area currently loaded on the map, if any
+let map = null;
+let polygonLayer = null;
+let hazardMarkers = [];  // Leaflet markers currently on the map
+let drawControl = null;
+let pendingHazardLatLng = null;
 
 const PROP_POSITIONS = ["Front Left", "Front Right", "Back Left", "Back Right"];
 const ARM_POSITIONS = ["Front Left", "Front Right", "Back Left", "Back Right"];
@@ -79,6 +90,7 @@ onAuthStateChanged(auth, (user) => {
   currentUser = user;
   document.getElementById("whoami").textContent = user.email;
   loadDrones().then(() => loadFlights());
+  loadAreas();
 });
 
 document.getElementById("logoutLink").addEventListener("click", () => signOut(auth));
@@ -110,7 +122,13 @@ function showView(view) {
   ["dashboard", "new", "log", "batteries"].forEach((v) => {
     document.getElementById("view-" + v).classList.toggle("hidden", v !== view);
   });
-  if (view === "new") resetPreflightCheck();
+  if (view === "new") {
+    resetPreflightCheck();
+    setTimeout(() => {
+      if (!map) initMap();
+      map.invalidateSize();
+    }, 0);
+  }
 }
 
 // ---------- One-time seed of your drone/battery details ----------
@@ -388,6 +406,223 @@ function renderDashboard() {
     recentRows.appendChild(tr);
   });
 }
+
+// ---------- Flying area map ----------
+function hazardShortLabel(full) {
+  return full.split(/[,(]/)[0].trim();
+}
+
+function buildHazardSelect() {
+  const sel = document.getElementById("hz_select");
+  sel.innerHTML = "";
+  HAZARD_CATEGORIES.forEach((cat, ci) => {
+    const group = document.createElement("optgroup");
+    group.label = cat.title;
+    cat.items.forEach((item, ii) => {
+      const opt = document.createElement("option");
+      opt.value = `${ci}_${ii}`;
+      opt.textContent = hazardShortLabel(item);
+      group.appendChild(opt);
+    });
+    sel.appendChild(group);
+  });
+  const otherOpt = document.createElement("option");
+  otherOpt.value = "other";
+  otherOpt.textContent = "Other (type your own)";
+  sel.appendChild(otherOpt);
+}
+buildHazardSelect();
+
+document.getElementById("hz_select").addEventListener("change", (e) => {
+  document.getElementById("hz_other_field").style.display = e.target.value === "other" ? "flex" : "none";
+});
+
+function initMap() {
+  map = L.map("map").setView([54.0, -2.5], 6);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: "&copy; OpenStreetMap contributors"
+  }).addTo(map);
+}
+
+function clearMapLayers() {
+  if (polygonLayer) { map.removeLayer(polygonLayer); polygonLayer = null; }
+  hazardMarkers.forEach((m) => map.removeLayer(m));
+  hazardMarkers = [];
+}
+
+async function loadAreas() {
+  const snap = await getDocs(query(collection(db, "areas"), orderBy("name")));
+  areas = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  renderAreaSelect();
+}
+
+function renderAreaSelect() {
+  const sel = document.getElementById("area_select");
+  const current = sel.value;
+  sel.innerHTML = '<option value="">-- Select a saved area --</option>';
+  areas.forEach((a) => {
+    const opt = document.createElement("option");
+    opt.value = a.id;
+    opt.textContent = a.name;
+    sel.appendChild(opt);
+  });
+  if (areas.find((a) => a.id === current)) sel.value = current;
+}
+
+document.getElementById("area_select").addEventListener("change", (e) => {
+  const area = areas.find((a) => a.id === e.target.value);
+  if (area) loadAreaOnMap(area); else clearArea();
+});
+
+function clearArea() {
+  currentArea = null;
+  if (map) clearMapLayers();
+  document.getElementById("area_status").textContent = "No area selected";
+  document.getElementById("area_edit_boundary").classList.add("hidden");
+  document.getElementById("area_save_boundary").classList.add("hidden");
+  renderHazardList();
+}
+
+function loadAreaOnMap(area) {
+  currentArea = area;
+  if (!map) initMap();
+  clearMapLayers();
+
+  polygonLayer = L.polygon(area.polygon, { color: "#e0a94a" }).addTo(map);
+  map.fitBounds(polygonLayer.getBounds(), { maxZoom: 17 });
+  attachPolygonClickHandler();
+
+  (area.hazards || []).forEach((h) => addHazardMarker(h));
+
+  document.getElementById("area_status").textContent = `"${area.name}" loaded — tap inside the area to add a hazard pin`;
+  document.getElementById("area_edit_boundary").classList.remove("hidden");
+  document.getElementById("area_save_boundary").classList.add("hidden");
+  renderHazardList();
+}
+
+function attachPolygonClickHandler() {
+  if (!polygonLayer) return;
+  polygonLayer.off("click");
+  polygonLayer.on("click", (e) => {
+    L.DomEvent.stopPropagation(e);
+    openHazardPicker(e.latlng);
+  });
+}
+
+function addHazardMarker(h) {
+  const marker = L.marker([h.lat, h.lng]).addTo(map);
+  marker.bindPopup(`<b>${h.label}</b>${h.note ? "<br>" + h.note : ""}`);
+  marker._hazardData = h;
+  hazardMarkers.push(marker);
+}
+
+function renderHazardList() {
+  const wrap = document.getElementById("area_hazard_list");
+  wrap.innerHTML = "";
+  if (!currentArea) return;
+  (currentArea.hazards || []).forEach((h, i) => {
+    const row = document.createElement("div");
+    row.className = "hazard-pin-row";
+    row.innerHTML = `<span><b></b></span><span class="remove-pin" title="Remove pin">&#10005;</span>`;
+    const labelSpan = row.querySelector("b");
+    labelSpan.textContent = h.label + (h.note ? " — " + h.note : "");
+    row.querySelector(".remove-pin").addEventListener("click", () => removeHazard(i));
+    wrap.appendChild(row);
+  });
+}
+
+async function removeHazard(index) {
+  if (!currentArea) return;
+  if (!confirm("Remove this hazard pin?")) return;
+  const hazards = (currentArea.hazards || []).filter((_, i) => i !== index);
+  await updateDoc(doc(db, "areas", currentArea.id), { hazards });
+  currentArea.hazards = hazards;
+  loadAreaOnMap(currentArea);
+}
+
+function openHazardPicker(latlng) {
+  pendingHazardLatLng = latlng;
+  document.getElementById("hz_note").value = "";
+  document.getElementById("hz_other_text").value = "";
+  document.getElementById("hz_other_field").style.display = "none";
+  document.getElementById("hz_select").selectedIndex = 0;
+  document.getElementById("hazard_picker").style.display = "flex";
+  document.getElementById("hazard_picker").style.flexDirection = "column";
+  document.getElementById("hazard_picker").scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+document.getElementById("hz_cancel").addEventListener("click", () => {
+  pendingHazardLatLng = null;
+  document.getElementById("hazard_picker").style.display = "none";
+});
+
+document.getElementById("hz_add").addEventListener("click", async () => {
+  if (!pendingHazardLatLng || !currentArea) return;
+  const val = document.getElementById("hz_select").value;
+  let label;
+  if (val === "other") {
+    label = document.getElementById("hz_other_text").value.trim();
+    if (!label) { alert("Type a short description for this hazard."); return; }
+  } else {
+    const [ci, ii] = val.split("_").map(Number);
+    label = hazardShortLabel(HAZARD_CATEGORIES[ci].items[ii]);
+  }
+  const note = document.getElementById("hz_note").value.trim();
+  const hazard = { lat: pendingHazardLatLng.lat, lng: pendingHazardLatLng.lng, label, note };
+
+  const hazards = [...(currentArea.hazards || []), hazard];
+  await updateDoc(doc(db, "areas", currentArea.id), { hazards });
+  currentArea.hazards = hazards;
+  document.getElementById("hazard_picker").style.display = "none";
+  pendingHazardLatLng = null;
+  loadAreaOnMap(currentArea);
+});
+
+document.getElementById("area_new").addEventListener("click", () => {
+  if (!map) initMap();
+  clearArea();
+  document.getElementById("area_status").textContent = "Draw your flying area boundary on the map, then close the shape.";
+
+  if (drawControl) { map.removeControl(drawControl); drawControl = null; }
+  drawControl = new L.Control.Draw({
+    draw: {
+      polygon: { allowIntersection: false, showArea: true },
+      polyline: false, rectangle: false, circle: false, marker: false, circlemarker: false
+    },
+    edit: false
+  });
+  map.addControl(drawControl);
+
+  map.once(L.Draw.Event.CREATED, async (e) => {
+    map.removeControl(drawControl);
+    drawControl = null;
+    const latlngs = e.layer.getLatLngs()[0].map((p) => [p.lat, p.lng]);
+    const name = prompt("Name this flying area (e.g. Home Field, North Paddock):");
+    if (!name) return;
+    const docRef = await addDoc(collection(db, "areas"), { name, polygon: latlngs, hazards: [] });
+    await loadAreas();
+    document.getElementById("area_select").value = docRef.id;
+    loadAreaOnMap({ id: docRef.id, name, polygon: latlngs, hazards: [] });
+  });
+});
+
+document.getElementById("area_edit_boundary").addEventListener("click", () => {
+  if (!polygonLayer) return;
+  polygonLayer.editing.enable();
+  document.getElementById("area_save_boundary").classList.remove("hidden");
+  document.getElementById("area_status").textContent = "Drag the corner points to reshape the boundary, then Save.";
+});
+
+document.getElementById("area_save_boundary").addEventListener("click", async () => {
+  if (!polygonLayer || !currentArea) return;
+  const latlngs = polygonLayer.getLatLngs()[0].map((p) => [p.lat, p.lng]);
+  await updateDoc(doc(db, "areas", currentArea.id), { polygon: latlngs });
+  currentArea.polygon = latlngs;
+  polygonLayer.editing.disable();
+  document.getElementById("area_save_boundary").classList.add("hidden");
+  document.getElementById("area_status").textContent = `"${currentArea.name}" saved.`;
+});
 
 // ---------- Pre-flight check ----------
 function buildQuadGrid(containerId, positions, prefix) {
@@ -712,6 +947,8 @@ document.getElementById("saveFlight").addEventListener("click", async () => {
     droneId, droneModel: drone.model, droneSerial: drone.serial,
     batteryId: battery ? battery.id : null, batteryName: battery ? battery.name : "",
     location, weather, notes, preflight,
+    areaId: currentArea ? currentArea.id : null,
+    areaName: currentArea ? currentArea.name : "",
     createdAt: serverTimestamp()
   });
 
@@ -820,12 +1057,12 @@ function formatDate(iso) {
 
 // ---------- CSV export (respects the current date-range filter) ----------
 document.getElementById("exportCsv").addEventListener("click", () => {
-  const header = ["Date", "Drone", "Serial", "Battery", "Start", "End", "Duration (min)", "Location", "Weather", "Pre-flight check", "Notes"];
+  const header = ["Date", "Drone", "Serial", "Battery", "Start", "End", "Duration (min)", "Location", "Flying Area", "Weather", "Pre-flight check", "Notes"];
   const lines = [header.join(",")];
   logFiltered.forEach((f) => {
     const row = [
       f.date, f.droneModel, f.droneSerial, f.batteryName, f.start, f.end,
-      f.durationMins, f.location, f.weather,
+      f.durationMins, f.location, f.areaName || "", f.weather,
       f.preflight ? (f.preflight.skipped ? "Skipped" : "Completed") : "—",
       (f.notes || "").replace(/,/g, ";")
     ];

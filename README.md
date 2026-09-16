@@ -8,6 +8,23 @@ tiers: GitHub Pages (hosting) + Firebase Spark plan (login + database).
 
 ## What's new in this version
 
+- **Updates now push to your phone automatically.** Previously a new
+  version could sit cached on your phone until you fully closed and
+  reopened the app (sometimes more than once). Now the app checks for a
+  new version the moment you open it or bring it back to the foreground,
+  and as soon as an update is ready it reloads itself once, automatically,
+  to start using it — no need to delete and re-add the home screen icon.
+- **Flying Area map, on the New Flight page** — draw your flying area's
+  boundary once on the map (OpenStreetMap), give it a name, and it's saved.
+  Next time you fly there, just pick it by name from the dropdown instead of
+  redrawing it. Tap anywhere inside the boundary to drop a hazard pin — pick
+  from the same hazard list used in the pre-flight check (kept to a short
+  label) or type your own, plus an optional note. Pins are saved with the
+  area, so they build up over repeat visits, and each has a small "×" to
+  remove it if a hazard is no longer there. An "Edit Boundary" button lets
+  you reshape a saved area if it wasn't quite right. Note: the map tiles
+  themselves need a connection to load (like any map), but everything you've
+  already drawn stays saved for offline viewing/editing once loaded once.
 - **Dashboard** — lands here after login. Shows each drone's airframe hours
   and cycles, its controller's hours and cycles, each battery's hours and
   cycles, overall totals, and your 5 most recent flights.
@@ -139,6 +156,6 @@ your own image whenever you'd like and I'll swap it in.
 - `firebase-config.js` — **you edit this** with your project's config and
   (optionally) your what3words key
 - `firestore.rules` — paste into the Firebase console's Firestore rules tab
-- `manifest.json`, `sw.js`, `icon-192.png`, `icon-512.png` — make the site
-  installable as an app (PWA) on your phone; no setup needed, just upload
-  them alongside everything else
+- `manifest.json`, `sw.js`, `sw-register.js`, `icon-192.png`, `icon-512.png`
+  — make the site installable as an app (PWA) on your phone and keep it
+  auto-updating; no setup needed, just upload them alongside everything else

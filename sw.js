@@ -2,13 +2,14 @@
 // and reloads instantly on repeat opens. It does NOT cache Firebase/API
 // calls, so your data is always fetched live — only the app's own files
 // are cached.
-const CACHE_NAME = "flight-log-v7";
+const CACHE_NAME = "flight-log-v10";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./app.html",
   "./styles.css",
   "./app.js",
+  "./sw-register.js",
   "./manifest.json",
   "./icon-192.png",
   "./icon-512.png",
@@ -16,7 +17,13 @@ const APP_SHELL = [
   // signal at all (not just Firestore's own offline data cache).
   "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js",
   "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js",
-  "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js"
+  "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js",
+  // Leaflet + Leaflet.draw, for the flying-area map (map tiles themselves
+  // still need a connection — only the library code is cached).
+  "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css",
+  "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js",
+  "https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.css",
+  "https://cdn.jsdelivr.net/npm/leaflet-draw@1.0.4/dist/leaflet.draw.js"
 ];
 
 self.addEventListener("install", (event) => {
@@ -40,7 +47,7 @@ self.addEventListener("fetch", (event) => {
 
   // The Firebase SDK files are cached so login/database code still loads
   // with no connection at all — cache first, network as a fallback/update.
-  if (url.origin === "https://www.gstatic.com") {
+  if (url.origin === "https://www.gstatic.com" || url.origin === "https://cdn.jsdelivr.net") {
     event.respondWith(
       caches.match(event.request).then((cached) => cached || fetch(event.request))
     );
