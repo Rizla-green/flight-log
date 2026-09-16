@@ -8,6 +8,10 @@ tiers: GitHub Pages (hosting) + Firebase Spark plan (login + database).
 
 ## What's new in this version
 
+- **Flying Area map is now satellite imagery**, and has a "📍 My Location"
+  button that centres the map on where you are (using your phone's GPS,
+  the same permission prompt as the what3words location button) — makes it
+  much easier to trace a boundary that actually matches the ground.
 - **Updates now push to your phone automatically.** Previously a new
   version could sit cached on your phone until you fully closed and
   reopened the app (sometimes more than once). Now the app checks for a

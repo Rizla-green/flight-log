@@ -437,13 +437,41 @@ document.getElementById("hz_select").addEventListener("change", (e) => {
   document.getElementById("hz_other_field").style.display = e.target.value === "other" ? "flex" : "none";
 });
 
+let locateMarker = null;
+
 function initMap() {
   map = L.map("map").setView([54.0, -2.5], 6);
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  // Satellite imagery (free, no API key needed).
+  L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
     maxZoom: 19,
-    attribution: "&copy; OpenStreetMap contributors"
+    attribution: "Tiles &copy; Esri"
   }).addTo(map);
+
+  map.on("locationfound", (e) => {
+    if (locateMarker) map.removeLayer(locateMarker);
+    locateMarker = L.circleMarker(e.latlng, {
+      radius: 8, color: "#4a9be0", fillColor: "#4a9be0", fillOpacity: 0.8
+    }).addTo(map).bindPopup("You are here").openPopup();
+    map.setView(e.latlng, 18);
+    setLocateBusy(false);
+  });
+  map.on("locationerror", (e) => {
+    setLocateBusy(false);
+    alert("Couldn't get your location — " + (e.message || "check your device's location permission for this site."));
+  });
 }
+
+function setLocateBusy(busy) {
+  const btn = document.getElementById("area_locate");
+  btn.disabled = busy;
+  btn.textContent = busy ? "Locating…" : "📍 My Location";
+}
+
+document.getElementById("area_locate").addEventListener("click", () => {
+  if (!map) initMap();
+  setLocateBusy(true);
+  map.locate({ setView: false, enableHighAccuracy: true, timeout: 10000 });
+});
 
 function clearMapLayers() {
   if (polygonLayer) { map.removeLayer(polygonLayer); polygonLayer = null; }
